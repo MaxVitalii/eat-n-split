@@ -49,13 +49,25 @@ export default function App() {
     setShowAddFriend(false);
   }
 
+  function handleSplitBill(value) {
+    setFriends((friends) =>
+      friends.map((friend) =>
+        friend.id === selectedFriend.id
+          ? { ...friend, balance: friend.balance + value }
+          : friend
+      )
+    );
+
+    setSelectedFriend(null);
+  }
+
   return (
     <div className="app">
       <div className="sidebar">
         <FriendsList
           friends={friends}
-          onSelection={handleSelection}
           selectedFriend={selectedFriend}
+          onSelection={handleSelection}
         />
 
         {showAddFriend && <FormAddFriend onAddFriend={handleAddFriend} />}
@@ -64,7 +76,14 @@ export default function App() {
           {showAddFriend ? "Close" : "Add friend"}
         </Button>
       </div>
-      {selectedFriend && <FormSplitBill selectedFriend={selectedFriend} />}
+
+      {selectedFriend && (
+        <FormSplitBill
+          selectedFriend={selectedFriend}
+          onSplitBill={handleSplitBill}
+          key={selectedFriend.id}
+        />
+      )}
     </div>
   );
 }
@@ -91,14 +110,15 @@ function Friend({ friend, onSelection, selectedFriend }) {
     <li className={isSelected ? "selected" : ""}>
       <img src={friend.image} alt={friend.name} />
       <h3>{friend.name}</h3>
+
       {friend.balance < 0 && (
         <p className="red">
-          You owe {friend.name} {Math.abs(friend.balance)}$
+          You owe {friend.name} {Math.abs(friend.balance)}€
         </p>
       )}
       {friend.balance > 0 && (
         <p className="green">
-          {friend.name} owes you {Math.abs(friend.balance)}$
+          {friend.name} owes you {Math.abs(friend.balance)}€
         </p>
       )}
       {friend.balance === 0 && <p>You and {friend.name} are even</p>}
@@ -119,18 +139,18 @@ function FormAddFriend({ onAddFriend }) {
 
     if (!name || !image) return;
 
-    const id = crypto.randomUUID;
+    const id = crypto.randomUUID();
     const newFriend = {
       id,
       name,
-      image: `${image}?${id}`,
+      image: `${image}?=${id}`,
       balance: 0,
     };
 
     onAddFriend(newFriend);
 
     setName("");
-    setImage("");
+    setImage("https://i.pravatar.cc/48");
   }
 
   return (
@@ -141,25 +161,34 @@ function FormAddFriend({ onAddFriend }) {
         value={name}
         onChange={(e) => setName(e.target.value)}
       />
+
       <label>🌄 Image URL</label>
       <input
         type="text"
         value={image}
         onChange={(e) => setImage(e.target.value)}
       />
+
       <Button>Add</Button>
     </form>
   );
 }
 
-function FormSplitBill({ selectedFriend }) {
+function FormSplitBill({ selectedFriend, onSplitBill }) {
   const [bill, setBill] = useState("");
   const [paidByUser, setPaidByUser] = useState("");
   const paidByFriend = bill ? bill - paidByUser : "";
   const [whoIsPaying, setWhoIsPaying] = useState("user");
 
+  function handleSubmit(e) {
+    e.preventDefault();
+
+    if (!bill || !paidByUser) return;
+    onSplitBill(whoIsPaying === "user" ? paidByFriend : -paidByUser);
+  }
+
   return (
-    <form className="form-split-bill">
+    <form className="form-split-bill" onSubmit={handleSubmit}>
       <h2>Split a bill with {selectedFriend.name}</h2>
 
       <label>💰 Bill value</label>
@@ -196,5 +225,3 @@ function FormSplitBill({ selectedFriend }) {
     </form>
   );
 }
-
-// 🧍‍♀️   💰 👫
